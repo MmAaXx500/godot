@@ -51,6 +51,7 @@ public:
 	virtual Error recvfrom(uint8_t *p_buffer, int p_len, int &r_read, IP_Address &r_ip, uint16_t &r_port) = 0;
 	virtual int set_option(ENetSocketOption p_option, int p_value) = 0;
 	virtual Error getsockname(IP_Address &r_ip, uint16_t &r_port) = 0;
+	virtual Error poll(NetSocket::PollType p_type, int p_timeout) = 0;
 	virtual void close() = 0;
 	virtual ~ENetGodotSocket(){};
 };
@@ -146,6 +147,10 @@ public:
 		return sock->getsockname(r_ip, r_port);
 	}
 
+	Error poll(NetSocket::PollType p_type, int p_timeout) {
+		return sock->poll(p_type, p_timeout);
+	}
+
 	void close() {
 		sock->close();
 	}
@@ -226,6 +231,10 @@ public:
 	}
 
 	Error getsockname(IP_Address &r_ip, uint16_t &r_port) {
+		return FAILED;
+	}
+
+	Error poll(NetSocket::PollType p_type, int p_timeout) {
 		return FAILED;
 	}
 
@@ -339,6 +348,10 @@ public:
 	}
 
 	Error getsockname(IP_Address &r_ip, uint16_t &r_port) {
+		return FAILED;
+	}
+
+	Error poll(NetSocket::PollType p_type, int p_timeout) {
 		return FAILED;
 	}
 
@@ -507,10 +520,26 @@ int enet_socket_receive(ENetSocket socket, ENetAddress *address, ENetBuffer *buf
 	return read;
 }
 
-// Not implemented
 int enet_socket_wait(ENetSocket socket, enet_uint32 *condition, enet_uint32 timeout) {
 
-	return 0; // do we need this function?
+	ENetGodotSocket *sock = (ENetGodotSocket *)socket;
+
+	NetSocket::PollType pollType;
+
+	if (*condition & ENET_SOCKET_WAIT_SEND && *condition & ENET_SOCKET_WAIT_RECEIVE) {
+		pollType = NetSocket::PollType::POLL_TYPE_IN_OUT;
+	} else if (*condition & ENET_SOCKET_WAIT_SEND) {
+		pollType = NetSocket::PollType::POLL_TYPE_OUT;
+	} else {
+		pollType = NetSocket::PollType::POLL_TYPE_IN;
+	}
+	Error err = sock->poll(pollType, timeout / 1000);
+
+	if (err != OK) {
+		return -1;
+	}
+
+	return OK;
 }
 
 int enet_socket_get_address(ENetSocket socket, ENetAddress *address) {
