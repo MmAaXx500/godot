@@ -409,9 +409,13 @@ if selected_platform in platform_list:
         env.Prepend(CCFLAGS=["/std:c++17"])
 
     # Enforce our minimal compiler version requirements
-    cc_version = methods.get_compiler_version(env) or [-1, -1]
-    cc_version_major = cc_version[0]
-    cc_version_minor = cc_version[1]
+    cc_version = methods.get_compiler_version(env) or {'major': '', 'minor': '', 'patch': '', 'metadata1': '', 'metadata2': '', 'date': ''}
+    cc_version_major = int(cc_version["major"] or -1)
+    cc_version_minor = int(cc_version["minor"] or -1)
+    cc_version_patch = int(cc_version["patch"] or -1)
+    cc_version_metadata1 = cc_version["metadata1"]
+    cc_version_metadata2 = cc_version["metadata2"]
+    cc_version_date = int(cc_version["date"] or -1)
 
     if methods.using_gcc(env):
         # GCC 8 before 8.4 has a regression in the support of guaranteed copy elision
@@ -430,6 +434,14 @@ if selected_platform in platform_list:
                 "C++17. Supported versions are GCC 7, 9 and later. Use a newer GCC "
                 'version, or Clang 6 or later by passing "use_llvm=yes" to the '
                 "SCons command line."
+            )
+            Exit(255)
+        elif cc_version_metadata1 == "win32":
+            print(
+                "Detected mingw version is not using posix threads. Only posix "
+                "version of mingw is supported. "
+                'Use "update-alternatives --config <platform>-w64-mingw32-[gcc|g++]" '
+                "to switch to posix threads."
             )
             Exit(255)
     elif methods.using_clang(env):
