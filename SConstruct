@@ -447,9 +447,14 @@ if selected_platform in platform_list:
             )
             Exit(255)
     elif methods.using_clang(env):
+        if cc_version_major == -1:
+            print(
+                "Couldn't detect compiler version, skipping version checks. "
+                "Build may fail if the compiler doesn't support C++17 fully."
+            )
         # Apple LLVM versions differ from upstream LLVM version \o/, compare
         # in https://en.wikipedia.org/wiki/Xcode#Toolchain_versions
-        if env["platform"] == "osx" or env["platform"] == "iphone":
+        elif env["platform"] == "osx" or env["platform"] == "iphone":
             vanilla = methods.is_vanilla_clang(env)
             if vanilla and cc_version_major < 6:
                 print(
